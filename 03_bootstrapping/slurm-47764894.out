@@ -1,0 +1,64 @@
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+/home/xhq/miniconda3/envs/UltraSeq/lib/python3.10/site-packages/numpy/lib/nanfunctions.py:1215: RuntimeWarning: Mean of empty slice
+  return np.nanmean(a, axis, out=out, keepdims=keepdims)
+Processing data from /labs/mwinslow/Haiqing/Bootstrapping_analysis/GS_BT-All_Data-241230/Input_data/Batch1T4_data-Tumor.parquet...
+Normal mode is implemented.
+Focal genotype cell cutoff: 200
+Reference genotype cell cutoff: 100
+Focal genotype: KTHC
+Reference genotype: KT
+Calculating tumor size quantiles: ['50', '60', '70', '80', '90', '95']
+Performing 1000 bootstrapping repeats
+No sgRNA is excluded from the analysis
+No sample is excluded from the analysis
+There are 204 experiment mice
+There are 38 control mice
+Normal method is used for the analysis
+Bootstrapping steps are finished
+All steps finished
+JobID           JobName              Submit               Start                 End      State  Partition                        ReqTRES    CPUTime     MaxRSS                       NodeList 
+------------ ---------- ------------------- ------------------- ------------------- ---------- ---------- ------------------------------ ---------- ---------- ------------------------------ 
+47764894     01-BT_bas+ 2025-03-12T12:34:57 2025-03-12T12:34:57             Unknown    RUNNING      batch billing=1,cpu=1,mem=512000M,n+   15:00:43                cfx22885s-srcf-d11-11-west 
+47764894.ba+      batch 2025-03-12T12:34:57 2025-03-12T12:34:57             Unknown    RUNNING                                             15:00:43                cfx22885s-srcf-d11-11-west 
+47764894.ex+     extern 2025-03-12T12:34:57 2025-03-12T12:34:57             Unknown    RUNNING                                             15:00:43                cfx22885s-srcf-d11-11-west 
