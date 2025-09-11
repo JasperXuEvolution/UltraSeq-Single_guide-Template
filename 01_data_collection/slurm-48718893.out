@@ -1,6 +1,0 @@
-mirror: Login failed: Login incorrect
-JobID           JobName              Submit               Start                 End      State  Partition                        ReqTRES    CPUTime     MaxRSS                       NodeList 
------------- ---------- ------------------- ------------------- ------------------- ---------- ---------- ------------------------------ ---------- ---------- ------------------------------ 
-48718893     Data_Down+ 2025-09-11T11:53:22 2025-09-11T11:53:35             Unknown    RUNNING      batch billing=1,cpu=1,mem=1024M,nod+   00:00:01                cfx22885s-srcf-d11-03-east 
-48718893.ba+      batch 2025-09-11T11:53:35 2025-09-11T11:53:35             Unknown    RUNNING                                             00:00:01                cfx22885s-srcf-d11-03-east 
-48718893.ex+     extern 2025-09-11T11:53:35 2025-09-11T11:53:35             Unknown    RUNNING                                             00:00:01                cfx22885s-srcf-d11-03-east 
