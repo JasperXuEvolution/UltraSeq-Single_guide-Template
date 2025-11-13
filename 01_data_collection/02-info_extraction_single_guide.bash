@@ -13,6 +13,8 @@
 #SBATCH --time=2-24:00:00
 #SBATCH --account=mwinslow
 #SBATCH --partition=batch
+#SBATCH --output=./log/%x_%j.out              # Standard output log file
+#SBATCH --error=./log/%x_%j.err               # Standard error log file
 
 # -----------------------------------------------------------
 # Environment Setup: Load configuration, modules, and Conda environment.
