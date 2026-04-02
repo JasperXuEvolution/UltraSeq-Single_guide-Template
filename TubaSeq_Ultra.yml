@@ -1,0 +1,26 @@
+# Conda environment for Final_data_analysis Python notebooks and scripts.
+# Create: conda env create -f TubaSeq_Ultra.yml
+# Update existing env after editing this file: conda env update -f TubaSeq_Ultra.yml --prune
+# Activate: conda activate TubaSeq_Ultra
+#
+# R workflows under GSEA/ are not included here; use a separate R/Bioconductor setup.
+
+name: TubaSeq_Ultra
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - numpy
+  - pandas
+  - pyarrow
+  - scipy
+  - matplotlib
+  - seaborn
+  - statsmodels
+  - scikit-learn
+  - openpyxl
+  - jupyter
+  - ipykernel
+  - nbconvert

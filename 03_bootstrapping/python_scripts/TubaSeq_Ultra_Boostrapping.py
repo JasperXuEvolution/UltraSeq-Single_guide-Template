@@ -22,7 +22,7 @@ Features:
 
 Requirements:
     • Python 3.x
-    • Python libraries: pandas, matplotlib, numpy, scipy, argparse, math, copy, random
+    • Python libraries: pandas, numpy, argparse, math
 
 Usage:
     The script is executed from the command line with several arguments. Below are some
@@ -73,7 +73,8 @@ Arguments:
     --a3 : (Optional) Cell number cutoff for reference genotype.
     --a4 : Number of bootstrapping replicates.
     --a5 : Focal genotype identifier.
-    --a6 : (Optional) Reference genotype identifier.
+    --a6 : (Optional) Reference genotype identifier. Omit for focal-only analysis (no Cas9-negative
+        control); only valid with --m N and --c No (standard bootstrap).
     --a7 : (Optional) Minimal tumor size for adaptive method.
     --o1 : Output address for summary data.
     --o2 : (Optional) Output address for intermediate data.
@@ -82,6 +83,7 @@ Arguments:
     --m  : Mode of operation: 'N' for normal method, 'P' for plasmid method.
     --c  : Combined effect mode: 'Yes' for adaptive method, 'No' for normal method.
     --p  : (Optional) Address of processed plasmid data (required for plasmid mode).
+    --seed : (Optional) Integer seed for NumPy; default 2026 if omitted.
 
 Output:
     Depending on the options and bootstrapping replicates, the script produces:
@@ -92,36 +94,37 @@ Output:
 -------------------------------------------------
 """
 
-# ----------------------- Start of Code -----------------------
-
-# ## 1 Functions and module
-
-# ### 1.1 Modules
-
-# In[1]:
-
-
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib import gridspec
+# =============================================================================
+# Imports
+# =============================================================================
+import argparse
 import math
 import numpy as np
-import copy
-import scipy
-import random
-import argparse
-from scipy.stats import rankdata
-
-### Functions
+import pandas as pd
 
 
-
-
-def Bootstrapping_Final_df_v1(raw_df,input_sample_list1,input_sample_list2,cell_number_cutoff_focal,cell_number_cutoff_ref,percentile_list,number_of_replicate,input_total_gRNA_number):
-    # experimental mouse
+# =============================================================================
+# Bootstrapping pipelines (Cas9-negative or plasmid control; v1 = standard, v2 = adaptive)
+# =============================================================================
+def Bootstrapping_Final_df_v1(
+    raw_df,
+    input_sample_list1,
+    input_sample_list2,
+    cell_number_cutoff_focal,
+    cell_number_cutoff_ref,
+    percentile_list,
+    number_of_replicate,
+    input_total_gRNA_number,  # distinct gRNA count; only for control Nested_Boostrap_Index_Special_single
+):
+    # Experimental mice
     temp_ref_df1 = Generate_ref_input_df(raw_df,input_sample_list1,cell_number_cutoff_focal).copy()
-    # Control mouse
-    temp_ref_df2 = Generate_ref_input_df(raw_df,input_sample_list2,cell_number_cutoff_ref).copy()
+    # Control mice (optional: if input_sample_list2 is None, no reference cohort — focal-only metrics)
+    if input_sample_list2 is None:
+        temp_ref_df2 = None
+    else:
+        temp_ref_df2 = Generate_ref_input_df(
+            raw_df, input_sample_list2, cell_number_cutoff_ref
+        ).copy()
     temp_final_df_observed = Calculate_Relative_Normalized_Metrics(temp_ref_df1,temp_ref_df2,percentile_list,'gRNA')
     temp_final_df_observed_gene = Calculate_Relative_Normalized_Metrics(temp_ref_df1,temp_ref_df2,percentile_list,'Targeted_gene_name')
     temp_final_df_observed['Bootstrap_id'] = ['Real']*temp_final_df_observed.shape[0] #gRNA df
@@ -130,17 +133,20 @@ def Bootstrapping_Final_df_v1(raw_df,input_sample_list1,input_sample_list2,cell_
     temp_out_dfs = [temp_final_df_observed]
     temp_out_dfs_gene= [temp_final_df_observed_gene]
     if number_of_replicate!=0:
-        # experimental
         Mouse_index_dic_1 = Generate_Index_Dictionary(temp_ref_df1)
-        # control
-        Mouse_index_dic_2 = Generate_Index_Dictionary(temp_ref_df2)
+        if temp_ref_df2 is not None:
+            Mouse_index_dic_2 = Generate_Index_Dictionary(temp_ref_df2)
         for bootstrap_cycle in range(number_of_replicate):
             x = Nested_Boostrap_Index_single(Mouse_index_dic_1)
             temp_bootstrap_df_1 = temp_ref_df1.loc[x]
-            y = Nested_Boostrap_Index_Special_single(Mouse_index_dic_2,temp_ref_df2,input_total_gRNA_number)
-            temp_bootstrap_df_2 = temp_ref_df2.loc[y]
-            temp_metric_df = Calculate_Relative_Normalized_Metrics(temp_bootstrap_df_1,temp_bootstrap_df_2,percentile_list,'gRNA')
-            temp_metric_df_gene = Calculate_Relative_Normalized_Metrics(temp_bootstrap_df_1,temp_bootstrap_df_2,percentile_list,'Targeted_gene_name')
+            if temp_ref_df2 is not None:
+                y = Nested_Boostrap_Index_Special_single(Mouse_index_dic_2,temp_ref_df2,input_total_gRNA_number)
+                temp_bootstrap_df_2 = temp_ref_df2.loc[y]
+                temp_metric_df = Calculate_Relative_Normalized_Metrics(temp_bootstrap_df_1,temp_bootstrap_df_2,percentile_list,'gRNA')
+                temp_metric_df_gene = Calculate_Relative_Normalized_Metrics(temp_bootstrap_df_1,temp_bootstrap_df_2,percentile_list,'Targeted_gene_name')
+            else:
+                temp_metric_df = Calculate_Relative_Normalized_Metrics(temp_bootstrap_df_1,None,percentile_list,'gRNA')
+                temp_metric_df_gene = Calculate_Relative_Normalized_Metrics(temp_bootstrap_df_1,None,percentile_list,'Targeted_gene_name')
             temp_metric_df['Bootstrap_id'] = ['B'+str(bootstrap_cycle)]*temp_metric_df.shape[0]
             temp_metric_df_gene['Bootstrap_id'] = ['B'+str(bootstrap_cycle)]*temp_metric_df_gene.shape[0]
             temp_out_dfs.append(temp_metric_df)
@@ -155,7 +161,16 @@ def Bootstrapping_Final_df_v1(raw_df,input_sample_list1,input_sample_list2,cell_
     return(temp_out_df,temp_out_df_gene)
 
 
-def Bootstrapping_Final_df_v2(raw_df,input_sample_list1,input_sample_list2,cell_number_cutoff_focal,cell_number_cutoff_ref,percentile_list,number_of_replicate,input_total_gRNA_number,minimal_tumor_size):
+def Bootstrapping_Final_df_v2(
+    raw_df,
+    input_sample_list1,
+    input_sample_list2,
+    cell_number_cutoff_focal,
+    cell_number_cutoff_ref,
+    percentile_list,
+    number_of_replicate,
+    minimal_tumor_size,
+):
     # experimental mouse
     temp_ref_df1 = Generate_ref_input_df(raw_df,input_sample_list1,minimal_tumor_size).sort_values(by='Cell_number',ascending=False).copy()
     # Control mouse
@@ -203,7 +218,15 @@ def Bootstrapping_Final_df_v2(raw_df,input_sample_list1,input_sample_list2,cell_
         temp_out_df_gene = recalculate_inert_gene_metrics(temp_out_df_gene)
     return(temp_out_df,temp_out_df_gene)
 
-def Bootstrapping_by_Plasmid_Final_df_v1(raw_df,plasmid_df,input_sample_list1,cell_number_cutoff_focal,percentile_list,number_of_replicate,input_total_gRNA_number):
+
+def Bootstrapping_by_Plasmid_Final_df_v1(
+    raw_df,
+    plasmid_df,
+    input_sample_list1,
+    cell_number_cutoff_focal,
+    percentile_list,
+    number_of_replicate,
+):
     # experimental mouse
     temp_ref_df1 = Generate_ref_input_df(raw_df,input_sample_list1,cell_number_cutoff_focal).copy()
     
@@ -241,7 +264,15 @@ def Bootstrapping_by_Plasmid_Final_df_v1(raw_df,plasmid_df,input_sample_list1,ce
     return(temp_out_df,temp_out_df_gene)
 
 
-def Bootstrapping_by_Plasmid_Final_df_v2(raw_df,plasmid_df,input_sample_list1,cell_number_cutoff_focal,percentile_list,number_of_replicate,input_total_gRNA_number,minimal_tumor_size):
+def Bootstrapping_by_Plasmid_Final_df_v2(
+    raw_df,
+    plasmid_df,
+    input_sample_list1,
+    cell_number_cutoff_focal,
+    percentile_list,
+    number_of_replicate,
+    minimal_tumor_size,
+):
     # experimental mouse
     temp_ref_df1 = Generate_ref_input_df(raw_df,input_sample_list1,minimal_tumor_size).sort_values(by='Cell_number',ascending=False).copy()
     # control df 
@@ -291,44 +322,50 @@ def Bootstrapping_by_Plasmid_Final_df_v2(raw_df,plasmid_df,input_sample_list1,ce
     return(temp_out_df,temp_out_df_gene)
 
 
-### bootstrapping mice and tumor
+# =============================================================================
+# Nested resampling (mouse-level then tumor-level with replacement)
+# =============================================================================
 def Nested_Boostrap_Index_single(input_dic):
     temp_sample_list = list(input_dic.keys())
     # I first sample mouse
     temp_list = np.random.choice(temp_sample_list,len(temp_sample_list),replace = True)
-    temp_coho = []
-    for y in temp_list: # within each mouse
-        temp_array = input_dic.get(y) # array of tuple, each is a (gRNA, clonal_barcode)
-        temp_resampled = np.random.choice(temp_array,len(temp_array),replace = True)
-        temp_coho = np.concatenate([temp_coho,temp_resampled])
+    temp_coho_list = []
+    for y in temp_list:
+        temp_array = input_dic.get(y)
+        temp_resampled = np.random.choice(temp_array, len(temp_array), replace=True)
+        temp_coho_list.append(temp_resampled)
+    temp_coho = np.concatenate(temp_coho_list)
     return(temp_coho)  
 
-def Nested_Boostrap_Index_Special_single(input_dic,input_df,input_total_gRNA_number):
+def Nested_Boostrap_Index_Special_single(input_dic, input_df, input_total_gRNA_number):
     temp_sample_list = list(input_dic.keys())
-    # I first sample mouse
+
+    if input_df['gRNA'].nunique() < input_total_gRNA_number:
+        raise ValueError("input_total_gRNA_number is larger than the number of gRNAs in input_df")
+
     temp_coho = []
-    while len(set(input_df.loc[temp_coho].gRNA)) < input_total_gRNA_number:
-        temp_list = np.random.choice(temp_sample_list,len(temp_sample_list),replace = True)
-        temp_coho = []
-        for y in temp_list: # within each mouse
-            temp_array = input_dic.get(y) # array of tuple, each is a (gRNA, clonal_barcode)
-            temp_resampled = np.random.choice(temp_array,len(temp_array),replace = True)
-            temp_coho = np.concatenate([temp_coho,temp_resampled]) 
-    return(temp_coho)  
+    while input_df.loc[temp_coho, 'gRNA'].nunique() < input_total_gRNA_number:
+        temp_list = np.random.choice(temp_sample_list, len(temp_sample_list), replace=True)
+        temp_coho_list = []
+        for y in temp_list:
+            temp_array = input_dic.get(y)
+            temp_resampled = np.random.choice(temp_array, len(temp_array), replace=True)
+            temp_coho_list.append(temp_resampled)
+        temp_coho = np.concatenate(temp_coho_list)
+
+    return temp_coho
 
 def Generate_Index_Dictionary(input_df):
-    # This function generate a dictionary for speed up the boostrap process
     temp_dic = {}
-    temp_group = input_df.groupby(['Sample_ID'])
-    for key in temp_group.groups.keys():
-        temp_dic[key] = temp_group.get_group(key).index.values
-    return(temp_dic)   
+    for key, sub_df in input_df.groupby('Sample_ID'):
+        temp_dic[key] = sub_df.index.values
+    return temp_dic
 
-def Generate_ref_input_df(input_df,input_sample_list,input_cell_cutoff):
-    return(input_df[(input_df['Cell_number']>input_cell_cutoff)&(input_df['Sample_ID'].isin(input_sample_list))])
-
-import pandas as pd
-import numpy as np
+def Generate_ref_input_df(input_df, input_sample_list, input_cell_cutoff):
+    return input_df[
+        (input_df["Cell_number"] > input_cell_cutoff)
+        & (input_df["Sample_ID"].isin(input_sample_list))
+    ]
 
 def Generate_AC_data(df1, minimal_tumor_size, gRNA_dic):
     """
@@ -399,7 +436,9 @@ def Generate_AC_data(df1, minimal_tumor_size, gRNA_dic):
     return pd.concat(df2_list, ignore_index=True)
 
 
-######################## Metrics calculation ####
+# =============================================================================
+# Metrics: experimental vs control normalization and relative (Inert) scaling
+# =============================================================================
 def Calculate_Relative_Normalized_Metrics(input_df1, input_df2, percentile_list, group_trait='gRNA'):
     """
     Calculate relative normalized metrics with LN_Mean calculation and additional annotations.
@@ -423,6 +462,7 @@ def Calculate_Relative_Normalized_Metrics(input_df1, input_df2, percentile_list,
         TTB = group['Cell_number'].sum()
         TTN = len(group['Cell_number'])
         LN_mean = LN_Mean(group['Cell_number'])
+        Geo_mean = Geometric_Mean(group['Cell_number'])
         Hill_estimator = hill_estimator(group['Cell_number'])
         # Calculate percentiles
         percentiles = {f'{p}_percentile': np.percentile(group['Cell_number'], p) for p in percentile_list}
@@ -434,6 +474,7 @@ def Calculate_Relative_Normalized_Metrics(input_df1, input_df2, percentile_list,
             'TTB': TTB,
             'TTN': TTN,
             'LN_mean': LN_mean,
+            'Geo_mean': Geo_mean,
             'Hill_estimator':Hill_estimator,
             **percentiles
         }
@@ -467,8 +508,9 @@ def Calculate_Relative_Normalized_Metrics(input_df1, input_df2, percentile_list,
     return temp_df
 
 
-######
-def Calculate_Relative_Normalized_Metrics_by_Plasmid(input_df1,plamsid_df,percentile_list,group_trait='gRNA'):
+def Calculate_Relative_Normalized_Metrics_by_Plasmid(
+    input_df1, plamsid_df, percentile_list, group_trait="gRNA"
+):
     grouped = input_df1.groupby([group_trait, 'Type'])
     # Initialize results list
     results = []
@@ -478,6 +520,7 @@ def Calculate_Relative_Normalized_Metrics_by_Plasmid(input_df1,plamsid_df,percen
         TTB = group['Cell_number'].sum()
         TTN = len(group['Cell_number'])
         LN_mean = LN_Mean(group['Cell_number'])
+        Geo_mean = Geometric_Mean(group['Cell_number'])
         Hill_estimator = hill_estimator(group['Cell_number'])
 
         # Calculate percentiles
@@ -491,6 +534,7 @@ def Calculate_Relative_Normalized_Metrics_by_Plasmid(input_df1,plamsid_df,percen
             'TTB': TTB,
             'TTN': TTN,
             'LN_mean': LN_mean,
+            'Geo_mean': Geo_mean,
             'Hill_estimator':Hill_estimator,
             **percentiles
         }
@@ -513,7 +557,7 @@ def Calculate_Relative_Normalized_Metrics_by_Plasmid(input_df1,plamsid_df,percen
     #     if temp_cname.startswith('P_'):
     #         temp_df[temp_cname] = temp_df[temp_cname]*temp_df['TTN_normalized']
     
-  # calculate relative expression
+    # calculate relative expression
     Add_Corhort_Specific_Relative_Metrics(temp_df,group_trait)
     
     # annotate sample type
@@ -578,6 +622,9 @@ def Generate_Normalized_Metrics_by_plasmid(input_df1,input_df2,trait_list,group_
     return(temp_output_df)
 
 
+# =============================================================================
+# Probability of exceeding inert-reference size thresholds (optional plasmid adjustment)
+# =============================================================================
 def calculate_probability_to_reach_size(group, percentile_cutoffs):
     """
     Calculate the probability of a tumor reaching specified sizes for a given group of cell numbers.
@@ -621,9 +668,9 @@ def generate_probability_df(dataframe, percentiles, group_by='gRNA'):
     cutoff_dict = dict(zip(percentiles, percentile_cutoffs))
     
     # Apply the probability calculation function to each group
-    probability_df = dataframe.groupby([group_by], as_index=False).apply(
+    probability_df = dataframe.groupby(group_by, sort=False).apply(
         calculate_probability_to_reach_size, percentile_cutoffs=cutoff_dict
-    )
+    ).reset_index()
     return probability_df.reset_index(drop=True)
 
 def Add_Corhort_Specific_Relative_Metrics(input_df,group_trait='gRNA'):
@@ -637,10 +684,12 @@ def Add_Corhort_Specific_Relative_Metrics(input_df,group_trait='gRNA'):
             input_df[temp_name] = input_df[temp_cname]/temp_sub[temp_cname].median()
 
 
-############Bootstrap summary function
+# =============================================================================
+# Bootstrap summary statistics and FDR over relative traits
+# =============================================================================
 def Generate_Final_Summary_Dataframe(input_df,trait_of_interest,group_trait='gRNA'):
     temp_summary = input_df[input_df['Bootstrap_id']!='Real'].groupby(group_trait,as_index = False).apply(Cal_Bootstrapping_Summary,(trait_of_interest))
-    temp_output_df = copy.deepcopy(input_df[input_df['Bootstrap_id'] =='Real'])
+    temp_output_df = input_df[input_df['Bootstrap_id'] == 'Real'].copy()
     temp_output_df = temp_output_df.merge(temp_summary, on = group_trait)
 
     # Dictionary to hold new columns
@@ -713,13 +762,17 @@ def recalculate_inert_gene_metrics(temp_out_df_gene):
     
     return temp_out_df_gene
 
-###################Basic fucntion
-
+# =============================================================================
+# Tumor-size helpers and descriptive statistics (used by other workflows / legacy paths)
+# =============================================================================
 def Find_Controls(input_gRNA_df, input_pattern):
-# this function will find the gRNA associated with control based on the key word
-# input_pattern is a regex expression 
-    return(input_gRNA_df.loc[
-        input_gRNA_df['Targeted_gene_name'].str.contains(input_pattern, na=False, regex=True),'gRNA'].unique())
+    """Return gRNAs whose Targeted_gene_name matches regex ``input_pattern``."""
+    return input_gRNA_df.loc[
+        input_gRNA_df["Targeted_gene_name"].str.contains(
+            input_pattern, na=False, regex=True
+        ),
+        "gRNA",
+    ].unique()
 
 def Cal_Tumor_Size_simple(x,input_percentile,mode='None'):
     d = {}
@@ -749,6 +802,7 @@ def Cal_Tumor_Size_Cas9_negative(x):
     return pd.Series(d, index=list(d.keys())) 
 
 
+# --- LN / geometric summaries, FDR, Hill (shared building blocks for metrics) ---
 def LN_Mean(input_vector):
     log_vector = np.log(input_vector)
     temp_mean = log_vector.mean()
@@ -765,15 +819,20 @@ def Geometric_Mean(input_vector):
 
 
 def fdr(p_vals):
-    p = np.asfarray(p_vals) # make input as float array
-    by_descend = p.argsort()[::-1]
-    by_orig = by_descend.argsort()
-    p = p[by_descend] # sort pvalue from small to large
-    ranked_p_values = rankdata(p,method ='max') # this max is very important, when identical, use largest
-    fdr = p * len(p) / ranked_p_values
-    fdr = np.minimum(1, np.minimum.accumulate(fdr))
-
-    return fdr[by_orig]
+    p = np.asarray(p_vals, dtype=float)
+    n = len(p)
+    order = np.argsort(p)              # ascending order
+    ranked_p = p[order]
+    # BH correction
+    fdr_vals = ranked_p * n / (np.arange(1, n + 1))
+    # enforce monotonicity
+    fdr_vals = np.minimum.accumulate(fdr_vals[::-1])[::-1]
+    # cap at 1
+    fdr_vals = np.minimum(fdr_vals, 1)
+    # return to original order
+    fdr_corrected = np.empty_like(fdr_vals)
+    fdr_corrected[order] = fdr_vals
+    return fdr_corrected
 
 def hill_estimator(cell_numbers, percentile=95):
     """
@@ -786,8 +845,6 @@ def hill_estimator(cell_numbers, percentile=95):
     Returns:
     - float: Hill's estimator value, or NaN if no values exceed the threshold.
     """
-    import numpy as np
-
     cell_numbers = np.array(cell_numbers)
     threshold = np.percentile(cell_numbers, percentile)
 
@@ -799,212 +856,322 @@ def hill_estimator(cell_numbers, percentile=95):
 
     return np.mean(np.log(above_threshold / threshold))
 
-# Example usage:
-group_cell_number = np.array([10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 5000])
-hill_value = hill_estimator(group_cell_number)
-hill_value
+
+# =============================================================================
+# Command-line interface
+# =============================================================================
+def build_arg_parser():
+    parser = argparse.ArgumentParser(
+        description="Nested bootstrap resampling of mice and tumors (UltraSeq)."
+    )
+    parser.add_argument(
+        "--a0",
+        required=True,
+        help="Path to processed tumor table (Parquet).",
+    )
+    parser.add_argument(
+        "--a1",
+        required=False,
+        help="Path to one sample ID per line to exclude.",
+    )
+    parser.add_argument(
+        "--a2",
+        required=True,
+        type=int,
+        help="Cell number cutoff for focal genotype.",
+    )
+    parser.add_argument(
+        "--a3",
+        required=False,
+        type=int,
+        help="Cell number cutoff for reference genotype (Cas9-negative mode).",
+    )
+    parser.add_argument(
+        "--a4",
+        required=True,
+        type=int,
+        help="Number of bootstrap replicates.",
+    )
+    parser.add_argument("--a5", required=True, help="Focal genotype label.")
+    parser.add_argument(
+        "--a6",
+        required=False,
+        help=(
+            "Reference genotype (Cas9-negative). Omit for focal-only: no control cohort "
+            "(--m N and --c No only; adaptive mode requires a reference)."
+        ),
+    )
+    parser.add_argument(
+        "--a7",
+        required=False,
+        type=int,
+        help="Minimal tumor size (adaptive / combined-effect mode).",
+    )
+    parser.add_argument("--o1", required=True, help="Output path prefix for summary CSVs.")
+    parser.add_argument(
+        "--o2",
+        required=False,
+        help="Optional output path prefix for intermediate long tables.",
+    )
+    parser.add_argument(
+        "--l1",
+        nargs="+",
+        required=False,
+        help="Tumor size percentiles to compute (e.g. 50 60 70 80 90 95 97 99).",
+    )
+    parser.add_argument(
+        "--l2",
+        nargs="+",
+        required=False,
+        help="gRNA sequences to exclude.",
+    )
+    parser.add_argument(
+        "--m",
+        required=True,
+        choices=["N", "P"],
+        help="N: Cas9-negative reference; P: plasmid reference.",
+    )
+    parser.add_argument(
+        "--c",
+        required=True,
+        choices=["Yes", "No"],
+        help="Yes: adaptive (matched tumor number); No: standard bootstrap.",
+    )
+    parser.add_argument(
+        "--p",
+        required=False,
+        help="Path to plasmid table (Parquet); required when --m P.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=2026,
+        help="NumPy random seed (default: 2026).",
+    )
+    return parser
 
 
-
-
-# -----
 def main():
-    parser = argparse.ArgumentParser(description='A function to do resampling of mice')
-    parser.add_argument("--a0", required=True, help="Address of processed data of Ultra-seq, can take multiple input")
-    parser.add_argument("--a1", required=False, help="Sample to exclude list address")
-    parser.add_argument("--a2", required=True, type=int, help="Cell number cutoff for focal genotype")
-    parser.add_argument("--a3", required=False, type=int, help="Cell number cutoff for ref genotype")
-    parser.add_argument("--a4", required=True, type=int, help="Number of boostrapping repeat")
-    parser.add_argument("--a5", required=True, help="Focal genotype")
-    parser.add_argument("--a6", required=False, help="Reference geneoytpe")
-    parser.add_argument("--a7", required=False, type=int, help="Minimal tumor size")
-    parser.add_argument("--o1", required=True, help="This the output address for summary data")
-    parser.add_argument("--o2", required=False, help="This the output address for intermediate data")
-    parser.add_argument('--l1', nargs='+', required=False, help="A list of quantile that I want to calculate tumor size quantile: 50 60 70 80 90 95 97 99")
-    parser.add_argument('--l2', nargs='+', required=False, help="A list of sgRNA sequence to exclude")
+    args = build_arg_parser().parse_args()
+    np.random.seed(args.seed)
 
-    # Add the new input argument for mode
-    parser.add_argument("--m", required=True, choices=['N', 'P'], help="Mode of operation: 'N' for normal method or 'P' for plasmid method")
-
-    # Add the new input argument for mode
-    parser.add_argument("--c", required=True, choices=['Yes', 'No'], help="Mode of operation: 'Yes' for combined effect method or 'No' for normal method")
-    # plasmid df address 
-    parser.add_argument("--p", required=False, help="Address of processed data of plasmid df")
-    
-
-    # data input
-    args = parser.parse_args()
-
-
-    raw_df_input_address  = args.a0
+    raw_df_input_address = args.a0
     print(f"Processing data from {args.a0}...")
 
+    # -------------------------------------------------------------------------
+    # Cas9-negative reference (--m N): focal vs reference mouse cohorts
+    # -------------------------------------------------------------------------
+    if args.m == "N":
+        print("Normal mode (Cas9-negative reference) is implemented.")
 
-    if args.m == 'N':
-        print (f'Normal mode is implemented.')
-
-        # Placeholder: Define focal and reference genotype cutoffs
+        # Focal vs reference cutoffs and genotype labels
         cell_number_cutoff_focal = args.a2
         cell_number_cutoff_ref = args.a3
         print(f"Focal genotype cell cutoff: {cell_number_cutoff_focal}")
         print(f"Reference genotype cell cutoff: {cell_number_cutoff_ref}")
 
-        # Placeholder: Specify genotypes
         focal_genotype = args.a5
         ref_genotype = args.a6
         print(f"Focal genotype: {focal_genotype}")
-        print(f"Reference genotype: {ref_genotype}")
+        if ref_genotype is None:
+            print("Reference genotype: (none — focal-only, no Cas9-negative control cohort)")
+        else:
+            print(f"Reference genotype: {ref_genotype}")
 
-
-        # Placeholder: Calculate specified quantiles
         if args.l1:
             temp_q = [int(x) for x in args.l1]
             print(f"Calculating tumor size quantiles: {args.l1}")
 
-
-        # Placeholder: Bootstrapping logic
         number_of_bootstrap = args.a4
         print(f"Performing {number_of_bootstrap} bootstrapping repeats")
 
         output_address = args.o1
 
-        if args.l2 is None: # gRNA to exclude
+        if args.l2 is None:
             sgRNA_to_exclude = []
-            print(f"No sgRNA is excluded from the analysis")
+            print("No sgRNA is excluded from the analysis")
         else:
             sgRNA_to_exclude = args.l2
-            print(f"sgRNAs excluded from the analysis:{sgRNA_to_exclude}")
-            
-        if args.a1 is None: # sample to exclude
+            print(f"sgRNAs excluded from the analysis: {sgRNA_to_exclude}")
+
+        if args.a1 is None:
             sample_to_exclude = []
-            print(f"No sample is excluded from the analysis")
+            print("No sample is excluded from the analysis")
         else:
             sample_discarded_list_address = args.a1
-            with open(sample_discarded_list_address, 'r') as f:
-                sample_to_exclude = [line.rstrip('\n') for line in f]
-            print(f"Samples excluded from the analysis:{sample_to_exclude}")
+            with open(sample_discarded_list_address, "r") as f:
+                sample_to_exclude = [line.rstrip("\n") for line in f]
+            print(f"Samples excluded from the analysis: {sample_to_exclude}")
 
-        raw_summary_df = pd.read_parquet(raw_df_input_address) # read input data
-        
-        # Generate bootstrapped df 
-        raw_summary_df = raw_summary_df[~raw_summary_df['gRNA'].isin(sgRNA_to_exclude)] # exclude gRNA
-        raw_summary_df= raw_summary_df[~raw_summary_df.Sample_ID.isin(sample_to_exclude)] # exclude the sample 
-        temp_input = raw_summary_df[raw_summary_df['Identity']=='gRNA'] # consider only sgRNA but not spiekin
-        
-        sgRNA_number = len(temp_input[temp_input['Identity']=='gRNA']['gRNA'].unique())
-        # I want to generate two name list of mice, one for experimental group and another one for control group.
-        # experimental mouse group
-        cohort_1 = temp_input[temp_input['Mouse_genotype'] == focal_genotype]['Sample_ID'].unique()
+        raw_summary_df = pd.read_parquet(raw_df_input_address)
+        raw_summary_df = raw_summary_df[~raw_summary_df["gRNA"].isin(sgRNA_to_exclude)]
+        raw_summary_df = raw_summary_df[~raw_summary_df.Sample_ID.isin(sample_to_exclude)]
+        temp_input = raw_summary_df[raw_summary_df["Identity"] == "gRNA"]
+
+        cohort_1 = temp_input[temp_input["Mouse_genotype"] == focal_genotype]["Sample_ID"].unique()
         print(f"There are {len(cohort_1):d} experiment mice")
-        # control mouse group
-        cohort_2 = temp_input[temp_input['Mouse_genotype'] == ref_genotype]['Sample_ID'].unique()
-        print(f"There are {len(cohort_2):d} control mice")
-        if args.c == 'No':
-            print(f"Normal method is used for the analysis")
-            test_final_df,test_final_df_gene = Bootstrapping_Final_df_v1(temp_input,cohort_1,cohort_2,cell_number_cutoff_focal,cell_number_cutoff_ref,temp_q,number_of_bootstrap,sgRNA_number)
-        if args.c == 'Yes':
-            print(f"Adaptive method is used for the analysis")
+        if ref_genotype is None:
+            cohort_2 = None
+        else:
+            cohort_2 = temp_input[temp_input["Mouse_genotype"] == ref_genotype]["Sample_ID"].unique()
+            print(f"There are {len(cohort_2):d} control mice")
+
+        if args.c == "Yes" and ref_genotype is None:
+            raise SystemExit(
+                "Adaptive mode (--c Yes) requires a reference genotype (--a6) for Cas9-negative analysis."
+            )
+
+        if args.c == "No":
+            print("Normal method is used for the analysis")
+            sgRNA_number = len(temp_input[temp_input["Identity"] == "gRNA"]["gRNA"].unique())
+            test_final_df, test_final_df_gene = Bootstrapping_Final_df_v1(
+                temp_input,
+                cohort_1,
+                cohort_2,
+                cell_number_cutoff_focal,
+                cell_number_cutoff_ref,
+                temp_q,
+                number_of_bootstrap,
+                sgRNA_number,
+            )
+        if args.c == "Yes":
+            print("Adaptive method is used for the analysis")
             minimal_tumor_size = args.a7
             print(f"Minimal cell cutoff: {minimal_tumor_size}")
-            test_final_df,test_final_df_gene = Bootstrapping_Final_df_v2(temp_input,cohort_1,cohort_2,cell_number_cutoff_focal,cell_number_cutoff_ref,temp_q,number_of_bootstrap,sgRNA_number,minimal_tumor_size)  
+            test_final_df, test_final_df_gene = Bootstrapping_Final_df_v2(
+                temp_input,
+                cohort_1,
+                cohort_2,
+                cell_number_cutoff_focal,
+                cell_number_cutoff_ref,
+                temp_q,
+                number_of_bootstrap,
+                minimal_tumor_size,
+            )
 
-    if args.m == 'P':
-        print (f'Plasmid mode is implemented.')
+    # -------------------------------------------------------------------------
+    # Plasmid reference (--m P)
+    # -------------------------------------------------------------------------
+    if args.m == "P":
+        print("Plasmid mode is implemented.")
 
-        plasmid_input_address  = args.p
+        plasmid_input_address = args.p
         print(f"Plasmid data from {args.p}...")
 
-        # Placeholder: Define focal and reference genotype cutoffs
         cell_number_cutoff_focal = args.a2
         print(f"Focal genotype cell cutoff: {cell_number_cutoff_focal}")
-        print(f"Reference genotype cell cutoff is not needed")
+        print("Reference genotype cell cutoff is not needed")
 
-        # Placeholder: Specify genotypes
         focal_genotype = args.a5
         print(f"Focal genotype: {focal_genotype}")
-        print(f"Reference is plamsid")
+        print("Reference is plasmid")
 
-
-        # Placeholder: Calculate specified quantiles
         if args.l1:
             temp_q = [int(x) for x in args.l1]
             print(f"Calculating tumor size quantiles: {args.l1}")
 
-
-        # Placeholder: Bootstrapping logic
         number_of_bootstrap = args.a4
         print(f"Performing {number_of_bootstrap} bootstrapping repeats")
 
         output_address = args.o1
 
-        if args.l2 is None: # gRNA to exclude
+        if args.l2 is None:
             sgRNA_to_exclude = []
-            print(f"No sgRNA is excluded from the analysis")
+            print("No sgRNA is excluded from the analysis")
         else:
             sgRNA_to_exclude = args.l2
-            print(f"sgRNAs excluded from the analysis:{sgRNA_to_exclude}")
-            
-        if args.a1 is None: # sample to exclude
+            print(f"sgRNAs excluded from the analysis: {sgRNA_to_exclude}")
+
+        if args.a1 is None:
             sample_to_exclude = []
-            print(f"No sample is excluded from the analysis")
+            print("No sample is excluded from the analysis")
         else:
             sample_discarded_list_address = args.a1
-            with open(sample_discarded_list_address, 'r') as f:
-                sample_to_exclude = [line.rstrip('\n') for line in f]
-            print(f"Samples excluded from the analysis:{sample_to_exclude}")
+            with open(sample_discarded_list_address, "r") as f:
+                sample_to_exclude = [line.rstrip("\n") for line in f]
+            print(f"Samples excluded from the analysis: {sample_to_exclude}")
 
-        raw_summary_df = pd.read_parquet(raw_df_input_address) # read input data
-        plasmid_df = pd.read_parquet(plasmid_input_address) # read plasmid data
-        
-        # Generate bootstrapped df 
-        raw_summary_df = raw_summary_df[~raw_summary_df['gRNA'].isin(sgRNA_to_exclude)] # exclude gRNA
-        raw_summary_df= raw_summary_df[~raw_summary_df.Sample_ID.isin(sample_to_exclude)] # exclude the sample 
-        temp_input = raw_summary_df[raw_summary_df['Identity']=='gRNA'] # consider only sgRNA but not spiekin
-        
-        sgRNA_number = len(temp_input[temp_input['Identity']=='gRNA']['gRNA'].unique())
-        # I want to generate two name list of mice, one for experimental group and another one for control group.
-        # experimental mouse group
-        cohort_1 = temp_input[temp_input['Mouse_genotype'] == focal_genotype]['Sample_ID'].unique()
+        raw_summary_df = pd.read_parquet(raw_df_input_address)
+        plasmid_df = pd.read_parquet(plasmid_input_address)
+
+        raw_summary_df = raw_summary_df[~raw_summary_df["gRNA"].isin(sgRNA_to_exclude)]
+        raw_summary_df = raw_summary_df[~raw_summary_df.Sample_ID.isin(sample_to_exclude)]
+        temp_input = raw_summary_df[raw_summary_df["Identity"] == "gRNA"]
+
+        cohort_1 = temp_input[temp_input["Mouse_genotype"] == focal_genotype]["Sample_ID"].unique()
         print(f"There are {len(cohort_1):d} experiment mice")
-        if args.c == 'No':
-            print(f"Normal method is used for the analysis")
-            test_final_df,test_final_df_gene = Bootstrapping_by_Plasmid_Final_df_v1(temp_input,plasmid_df,cohort_1,cell_number_cutoff_focal,temp_q,number_of_bootstrap,sgRNA_number)
-        if args.c == 'Yes':
-            print(f"Adaptive method is used for the analysis")
+        if args.c == "No":
+            print("Normal method is used for the analysis")
+            test_final_df, test_final_df_gene = Bootstrapping_by_Plasmid_Final_df_v1(
+                temp_input,
+                plasmid_df,
+                cohort_1,
+                cell_number_cutoff_focal,
+                temp_q,
+                number_of_bootstrap,
+            )
+        if args.c == "Yes":
+            print("Adaptive method is used for the analysis")
             minimal_tumor_size = args.a7
             print(f"Minimal cell cutoff: {minimal_tumor_size}")
-            test_final_df,test_final_df_gene = Bootstrapping_by_Plasmid_Final_df_v2(temp_input,plasmid_df,cohort_1,cell_number_cutoff_focal,temp_q,number_of_bootstrap,sgRNA_number,minimal_tumor_size)
-    
-    # output suffix
-    if args.m == 'P':
-        temp_suffix1 = '_PlasmidMethod'
-    if args.m == 'N':
-        temp_suffix1 = '_NormalMethod'
-    temp_suffix2 = ''
-    if args.c == 'Yes':
-        temp_suffix2 = '_CE'
+            test_final_df, test_final_df_gene = Bootstrapping_by_Plasmid_Final_df_v2(
+                temp_input,
+                plasmid_df,
+                cohort_1,
+                cell_number_cutoff_focal,
+                temp_q,
+                number_of_bootstrap,
+                minimal_tumor_size,
+            )
+
+    # -------------------------------------------------------------------------
+    # Output file suffix and write CSVs
+    # -------------------------------------------------------------------------
+    if args.m == "P":
+        temp_suffix1 = "_PlasmidMethod"
+    if args.m == "N":
+        temp_suffix1 = "_NormalMethod"
+    temp_suffix2 = ""
+    if args.c == "Yes":
+        temp_suffix2 = "_CE"
     temp_suffix3 = f"_{focal_genotype}_N{cell_number_cutoff_focal}_R{number_of_bootstrap}"
-    complete_suffix = temp_suffix1+temp_suffix2+temp_suffix3
+    complete_suffix = temp_suffix1 + temp_suffix2 + temp_suffix3
 
-    print(f"Bootstrapping steps are finished")
-    if args.o2: 
-        test_final_df.to_csv(args.o2+complete_suffix+'_gRNA'+'_intermediate',index = False)
-        test_final_df_gene.to_csv(args.o2+complete_suffix+'_gene'+'_intermediate',index = False)
+    print("Bootstrapping steps are finished")
+    if args.o2:
+        test_final_df.to_csv(
+            args.o2 + complete_suffix + "_gRNA" + "_intermediate", index=False
+        )
+        test_final_df_gene.to_csv(
+            args.o2 + complete_suffix + "_gene" + "_intermediate", index=False
+        )
     else:
-        print(f"No intermediate file output")
-    if number_of_bootstrap!=0:
-        # generate summary statistics
-        temp_trait_list = [x for x in test_final_df.columns if 'relative' in x] # all the relative trait
-        temp_trait_list = list(set(temp_trait_list))
+        print("No intermediate file output")
+    if number_of_bootstrap != 0:
+        temp_trait_list = list(
+            {x for x in test_final_df.columns if "relative" in x}
+        )
 
-        Final_summary_df = Generate_Final_Summary_Dataframe(test_final_df,temp_trait_list,'gRNA')
-        Final_gene_summary_df = Generate_Final_Summary_Dataframe(test_final_df_gene,temp_trait_list,'Targeted_gene_name')
-        Final_summary_df.to_csv(output_address+complete_suffix+'_gRNA_level_summary.csv',index = False)
-        Final_gene_summary_df.to_csv(output_address+complete_suffix+'_gene_level_summary.csv',index = False)
+        Final_summary_df = Generate_Final_Summary_Dataframe(
+            test_final_df, temp_trait_list, "gRNA"
+        )
+        Final_gene_summary_df = Generate_Final_Summary_Dataframe(
+            test_final_df_gene, temp_trait_list, "Targeted_gene_name"
+        )
+        Final_summary_df.to_csv(
+            output_address + complete_suffix + "_gRNA_level_summary.csv", index=False
+        )
+        Final_gene_summary_df.to_csv(
+            output_address + complete_suffix + "_gene_level_summary.csv", index=False
+        )
     else:
-        test_final_df.to_csv(output_address+complete_suffix+'_gRNA_level.csv',index = False)
-        test_final_df_gene.to_csv(output_address+complete_suffix+'_gene_level.csv',index = False)
-    print(f"All steps finished") 
+        test_final_df.to_csv(
+            output_address + complete_suffix + "_gRNA_level.csv", index=False
+        )
+        test_final_df_gene.to_csv(
+            output_address + complete_suffix + "_gene_level.csv", index=False
+        )
+    print("All steps finished")
 
 if __name__ == "__main__":
     main() 

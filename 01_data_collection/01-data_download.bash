@@ -31,8 +31,8 @@ fi
 mkdir -p $NGS_DIR
 
 # FTP connection parameters
-FTP_ACCOUNT="X202SC25087142-Z01-F001"  # FTP account username
-FTP_PASSWORD="y2rd1htr"                # FTP account password
+FTP_ACCOUNT="xxx"  # FTP account username
+FTP_PASSWORD="xxx"                # FTP account password
 FTP_HOST="usftp23.novogene.com"        # FTP server hostname
 FTP_PORT="3022"                        # FTP server port
 

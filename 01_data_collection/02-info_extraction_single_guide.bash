@@ -20,10 +20,9 @@
 # Environment Setup: Load configuration, modules, and Conda environment.
 # -----------------------------------------------------------
 source ../config.sh
-
 module load adapterremoval/2.3.1
 source ~/miniconda3/etc/profile.d/conda.sh 
-conda activate UltraSeq
+conda activate TubaSeq_Ultra
 
 # -----------------------------------------------------------
 # Directories and Input Files Setup
