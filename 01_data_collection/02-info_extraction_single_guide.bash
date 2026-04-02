@@ -31,7 +31,7 @@ working_dir="$PROJECT_DIR/01_data_collection"
 input_data_info_address="$working_dir/data/NGS_address"
 # guide_ref="$working_dir/data/guide_reference.csv"
 guide_ref="$working_dir/data/guide_reference-GS_single_guide.csv"
-python_script_dir="$working_dir/main_code"
+python_script_dir="$working_dir/python_scripts"
 
 # Explanation for input files:
 #   input_data_info_address:

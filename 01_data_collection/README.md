@@ -12,7 +12,7 @@ This step optionally downloads raw NGS data from a vendor SFTP mirror, then proc
 | `data/NGS_address_test` | Small list for dry runs. |
 | `data/guide_reference-GS_single_guide.csv` | Guide library with columns `Gene` and `gRNA`. |
 | `data/reads_distribution_summary.csv` | Optional QC summary (paths must match your FASTQ layout). |
-| `main_code/` | Python scripts invoked by `02-info_extraction_single_guide.bash`. |
+| `python_scripts/` | Python scripts invoked by `02-info_extraction_single_guide.bash`. |
 | `auxiliary_code/` | Notebooks to build `NGS_address`-style files and read-level QC (optional). |
 
 The pipeline creates working directories under `data/`, including `Merging/`, `Bartender/`, and `Processed_data/`.
@@ -50,7 +50,7 @@ sbatch 02-info_extraction_single_guide.bash
 
 **Logs:** SLURM stdout/stderr go to `./log/<jobname>_<jobid>.out` / `.err`. The script also runs a `sed` filter assuming a file named `slurm-<jobid>.out` in the submission directory; if your cluster only writes `./log/...`, adjust that block or ignore the extra “clean” step.
 
-## Python scripts (`main_code/`)
+## Python scripts (`python_scripts/`)
 
 | Script | Purpose |
 |--------|---------|
