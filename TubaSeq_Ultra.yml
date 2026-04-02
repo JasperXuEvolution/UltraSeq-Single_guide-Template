@@ -17,7 +17,7 @@ dependencies:
   - pyarrow
   - scipy
   - matplotlib
-  - seaborn
+  - seaborn=0.12.2 # important for plotting 
   - statsmodels
   - scikit-learn
   - openpyxl
