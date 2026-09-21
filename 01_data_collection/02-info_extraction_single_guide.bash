@@ -23,6 +23,10 @@ source ../config.sh
 module load adapterremoval/2.3.1
 source ~/miniconda3/etc/profile.d/conda.sh 
 conda activate TubaSeq_Ultra
+# Ensure bartender_single_com is on PATH (edit to your install location). A bare
+# `sbatch` from a login shell usually inherits it via --export=ALL, but setting it
+# here avoids silent failures when the job is submitted non-interactively.
+export PATH="$HOME/bin:$PATH"
 
 # -----------------------------------------------------------
 # Directories and Input Files Setup

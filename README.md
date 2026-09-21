@@ -8,7 +8,10 @@ UltraSeq-Single_guide/
 ├── TubaSeq_Ultra.yml         # Conda environment spec (reference)
 ├── 01_data_collection/       # Step 01 — FASTQ download (optional) + extraction
 │   ├── 01-data_download.bash
-│   ├── 02-info_extraction_single_guide.bash
+│   ├── 02-info_extraction_single_guide.bash   # serial: all samples in one job
+│   ├── 02a-info_extraction_per_sample.bash    # parallel: SLURM array, one task/sample
+│   ├── 02b-aggregate_samples.bash             # parallel: final cross-sample merge
+│   ├── submit_02_parallel.sh                  # submits 02a array + 02b (afterok)
 │   ├── data/                 # NGS_address, guide reference, intermediates
 │   ├── python_scripts/       # Parsing and aggregation Python entrypoints
 │   ├── auxiliary_code/       # Optional notebooks (address lists, QC)
@@ -29,10 +32,18 @@ UltraSeq-Single_guide/
 └── README.md
 ```
 
+## Requirements
+
+- **SLURM** cluster with `sbatch` (steps 01 and 03 are SLURM jobs).
+- **Conda env `TubaSeq_Ultra`** (see `TubaSeq_Ultra.yml`) with `pandas`, `regex`, `numpy`, etc. Adjust the `conda activate` line in the scripts if your env name differs.
+- **AdapterRemoval** — loaded via `module load adapterremoval/2.3.1` (edit for your cluster).
+- **Bartender** — `bartender_single_com` must be on `PATH` when the extraction job runs. The scripts add `export PATH="$HOME/bin:$PATH"` after `conda activate`; edit that to point at your Bartender install. (Without it, a job submitted non-interactively can silently skip clustering — the `.bartender` files are written but no `*_cluster.csv`, and aggregation then fails with "No objects to concatenate".)
+
 ## Step 01 — Data collection
 
 - **Download:** `01_data_collection/01-data_download.bash` mirrors vendor SFTP data into `NGS_DIR` from `config.sh`.
-- **Pipeline:** `01_data_collection/02-info_extraction_single_guide.bash` runs AdapterRemoval, parsing, Bartender clustering, and aggregation using sample lists in `data/NGS_address`.
+- **Extraction (serial):** `02-info_extraction_single_guide.bash` runs AdapterRemoval → parsing → Bartender clustering → aggregation for every sample in `data/NGS_address`, in a single job.
+- **Extraction (parallel):** `bash submit_02_parallel.sh` runs the same pipeline as a SLURM **job array** — one task per sample (`02a`), then a single merge job (`02b`) that starts only after all tasks succeed. Same output as the serial script, much faster for many samples.
 
 Details: [01_data_collection/README.md](01_data_collection/README.md).
 

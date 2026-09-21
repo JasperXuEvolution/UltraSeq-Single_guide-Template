@@ -57,7 +57,7 @@ def merge_bartender_output(input_barcode_address, input_cluster_address):
     temp_df2 = pd.read_csv(input_cluster_address)
     temp_merge = pd.merge(
         temp_df1, temp_df2, how='inner', on=['Cluster.ID'],
-        left_index=False, right_index=False, sort=True, copy=True, indicator=False,
+        left_index=False, right_index=False, sort=True, indicator=False,
         validate=None
     )
     return temp_merge
