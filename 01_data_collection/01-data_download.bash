@@ -3,14 +3,14 @@
 # This script downloads NGS data from a remote FTP server using lftp.
 
 # SLURM directives for job submission
-#SBATCH --job-name=Data_Download_LA100_250909  # Job name
-#SBATCH --mail-user=xhq@stanford.edu          # Email for notifications
+#SBATCH --job-name=01-data_download           # Job name
+#SBATCH --mail-user=your.email@example.com    # Email for notifications
 #SBATCH --cpus-per-task=2                     # Number of CPU cores per task
 #SBATCH --nodes=1                             # Number of nodes
 #SBATCH --ntasks-per-node=1                   # Number of tasks per node
 #SBATCH --mem-per-cpu=2g                      # Memory per CPU core
 #SBATCH --time=2-00:00:00                     # Maximum runtime (2 days)
-#SBATCH --account=mwinslow                    # Account name for billing
+#SBATCH --account=your_slurm_account          # Account name for billing
 #SBATCH --output=./log/%x_%j.out              # Standard output log file
 #SBATCH --error=./log/%x_%j.err               # Standard error log file
 #SBATCH --partition=batch                     # Partition to submit the job
@@ -30,10 +30,11 @@ fi
 # Create the directory for NGS data
 mkdir -p $NGS_DIR
 
-# FTP connection parameters
-FTP_ACCOUNT="xxx"  # FTP account username
-FTP_PASSWORD="xxx"                # FTP account password
-FTP_HOST="usftp23.novogene.com"        # FTP server hostname
+# FTP connection parameters (provided by your sequencing vendor)
+# NOTE: Do not commit real credentials. Fill these in locally only.
+FTP_ACCOUNT="your_ftp_username"        # FTP account username
+FTP_PASSWORD="your_ftp_password"       # FTP account password
+FTP_HOST="ftp.your-vendor.com"         # FTP server hostname
 FTP_PORT="3022"                        # FTP server port
 
 # Download data using lftp

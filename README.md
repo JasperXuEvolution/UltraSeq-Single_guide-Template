@@ -1,6 +1,6 @@
 # UltraSeq Single Guide
 
-Pipeline for single-guide UltraSeq: raw NGS processing (step 01), then statistical bootstrapping on processed tables (step 03). Configure paths in **`config.sh`** at the repository root before running SLURM jobs.
+Pipeline for single-guide UltraSeq: raw NGS processing (step 01), notebook-based cleaning and QC (step 02), then statistical bootstrapping on the processed tables (step 03). Configure paths in **`config.sh`** at the repository root before running SLURM jobs.
 
 ```
 UltraSeq-Single_guide/
@@ -13,9 +13,16 @@ UltraSeq-Single_guide/
 │   ├── python_scripts/       # Parsing and aggregation Python entrypoints
 │   ├── auxiliary_code/       # Optional notebooks (address lists, QC)
 │   └── README.md             # Full documentation for step 01
+├── 02_data_cleaning_and_QC/  # Step 02 — QC notebooks → processed parquet for step 03
+│   ├── *-QC_part1-*.ipynb    # Annotate + spike-in QC
+│   ├── *-QC_part2-*.ipynb    # Sample QC + emit bootstrapping input
+│   ├── UltraSeq-SampleSpecificAnalysisFunction-*.py  # Shared helpers
+│   ├── data/                 # Inputs from step 01 + generated tables (git-ignored)
+│   ├── figs/                 # QC figures (git-ignored)
+│   └── README.md             # Full documentation for step 02
 ├── 03_bootstrapping/         # Step 03 — bootstrapping on parquet inputs
 │   ├── bash/                 # SLURM wrappers (adaptive/normal × plasmid or not)
-│   ├── data/                 # Input parquet files (tumor; plasmid for some jobs)
+│   ├── data/                 # Input parquet files from step 02 (+ plasmid for some jobs)
 │   ├── results/              # Output prefix root (created by scripts)
 │   ├── python_scripts/       # TubaSeq_Ultra_Boostrapping.py
 │   └── README.md             # Full documentation for step 03
@@ -28,6 +35,14 @@ UltraSeq-Single_guide/
 - **Pipeline:** `01_data_collection/02-info_extraction_single_guide.bash` runs AdapterRemoval, parsing, Bartender clustering, and aggregation using sample lists in `data/NGS_address`.
 
 Details: [01_data_collection/README.md](01_data_collection/README.md).
+
+## Step 02 — Data cleaning and QC
+
+- **Notebooks:** run `02_data_cleaning_and_QC/*-QC_part1-*.ipynb` then `*-QC_part2-*.ipynb` from that directory.
+- **Input:** `gRNA_clonalbarcode_combined.csv` from step 01, plus guide/sample metadata (see step-02 README).
+- **Output:** a processed `.parquet` table (e.g. `GS_BTHC_KT_tumor.parquet`) that step 03 consumes.
+
+Details: [02_data_cleaning_and_QC/README.md](02_data_cleaning_and_QC/README.md).
 
 ## Step 03 — Bootstrapping
 

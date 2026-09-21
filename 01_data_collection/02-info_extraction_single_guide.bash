@@ -4,14 +4,14 @@
 # -----------------------------------------------------------
 # SLURM SBATCH Directives: Job submission options for the cluster.
 # -----------------------------------------------------------
-#SBATCH --job-name=UltraSeq_pipeline_single_guide
-#SBATCH --mail-user=xhq@stanford.edu
+#SBATCH --job-name=02-info_extraction_single_guide
+#SBATCH --mail-user=your.email@example.com
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem-per-cpu=50g 
+#SBATCH --mem-per-cpu=50g
 #SBATCH --time=2-24:00:00
-#SBATCH --account=mwinslow
+#SBATCH --account=your_slurm_account
 #SBATCH --partition=batch
 #SBATCH --output=./log/%x_%j.out              # Standard output log file
 #SBATCH --error=./log/%x_%j.err               # Standard error log file

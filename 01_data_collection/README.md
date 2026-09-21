@@ -11,7 +11,6 @@ This step optionally downloads raw NGS data from a vendor SFTP mirror, then proc
 | `data/NGS_address` | One sample per line: `R1_path,R2_path,sample_id` (comma-separated). |
 | `data/NGS_address_test` | Small list for dry runs. |
 | `data/guide_reference-GS_single_guide.csv` | Guide library with columns `Gene` and `gRNA`. |
-| `data/reads_distribution_summary.csv` | Optional QC summary (paths must match your FASTQ layout). |
 | `python_scripts/` | Python scripts invoked by `02-info_extraction_single_guide.bash`. |
 | `auxiliary_code/` | Notebooks to build `NGS_address`-style files and read-level QC (optional). |
 

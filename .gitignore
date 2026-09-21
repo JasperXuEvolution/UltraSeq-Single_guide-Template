@@ -1,6 +1,27 @@
+# --- OS / editor junk ---
+.DS_Store
+.Rhistory
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.jupyter/
+
+# --- Step 01: large intermediates and logs ---
+01_data_collection/data/Merging/
 01_data_collection/data/Trimmed_reads/
 01_data_collection/data/Bartender/
 01_data_collection/data/Processed_data/
 01_data_collection/data/Raw_reads/
 01_data_collection/log/
+
+# --- Step 02: large inputs/outputs (regenerated locally; keep folders) ---
+02_data_cleaning_and_QC/data/*
+02_data_cleaning_and_QC/figs/*
+02_data_cleaning_and_QC/log/
+!02_data_cleaning_and_QC/data/.gitkeep
+!02_data_cleaning_and_QC/figs/.gitkeep
+
+# --- Step 03: bootstrapping data and results ---
 03_bootstrapping/data/
+03_bootstrapping/results/
+03_bootstrapping/log/
